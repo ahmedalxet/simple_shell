@@ -1,31 +1,84 @@
-#include "shell.h"
+#include "holberton.h"
+
 /**
- * get_line - Prints "Mi_shell/user@root$"  and wait for a command
- * @isatty_val: no_interactive
- * Return: The read command (line)
- **/
-char *get_line(int isatty_val)
+ * bring_line - assigns the line var for get_line
+ * @lineptr: Buffer that store the input str
+ * @buffer: str that is been called to line
+ * @n: size of line
+ * @j: size of buffer
+ */
+void bring_line(char **lineptr, size_t *n, char *buffer, size_t j)
 {
-	ssize_t read = 0;
-	size_t bufer_len = 0;
-	char *line = NULL;
 
-	if (isatty_val == 1)
+	if (*lineptr == NULL)
 	{
-		write(STDOUT, "\033[1;31mMi_shell/user@root$ ", 32);
-		write(STDOUT, "\033[0m", 4);
+		if  (j > BUFSIZE)
+			*n = j;
+
+		else
+			*n = BUFSIZE;
+		*lineptr = buffer;
 	}
-
-	read = getline(&line, &bufer_len, stdin);
-
-	if (read == EOF)
+	else if (*n < j)
 	{
-		if (isatty_val == 1)
+		if (j > BUFSIZE)
+			*n = j;
+		else
+			*n = BUFSIZE;
+		*lineptr = buffer;
+	}
+	else
+	{
+		_strcpy(*lineptr, buffer);
+		free(buffer);
+	}
+}
+/**
+ * get_line - Read inpt from stream
+ * @lineptr: buffer that stores the input
+ * @n: size of lineptr
+ * @stream: stream to read from
+ * Return: The number of bytes
+ */
+ssize_t get_line(char **lineptr, size_t *n, FILE *stream)
+{
+	int i;
+	static ssize_t input;
+	ssize_t retval;
+	char *buffer;
+	char t = 'z';
+
+	if (input == 0)
+		fflush(stream);
+	else
+		return (-1);
+	input = 0;
+
+	buffer = malloc(sizeof(char) * BUFSIZE);
+	if (buffer == 0)
+		return (-1);
+	while (t != '\n')
+	{
+		i = read(STDIN_FILENO, &t, 1);
+		if (i == -1 || (i == 0 && input == 0))
 		{
-			printf("\n");
+			free(buffer);
+			return (-1);
 		}
-		free(line);
-		exit(EXIT_SUCCESS);
+		if (i == 0 && input != 0)
+		{
+			input++;
+			break;
+		}
+		if (input >= BUFSIZE)
+			buffer = _realloc(buffer, input, input + 1);
+		buffer[input] = t;
+		input++;
 	}
-	return (line);
+	buffer[input] = '\0';
+	bring_line(lineptr, n, buffer, input);
+	retval = input;
+	if (i != 0)
+		input = 0;
+	return (retval);
 }
